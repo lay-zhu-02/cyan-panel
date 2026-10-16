@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cyan-panel · 服务器控制台</title>
+<meta name="theme-color" content="#101720">
+<meta name="description" content="cyan-panel 轻量服务器控制台，管理文件、监控资源与连接终端。">
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg?v=2ddfac63ed9e">
+<link rel="stylesheet" href="/static/style.css?v=2ddfac63ed9e">
+<link rel="stylesheet" href="/static/vendor/xterm.css?v=2ddfac63ed9e">
+<link rel="stylesheet" href="/static/vendor/cyan-theme/theme.css?v=2ddfac63ed9e">
+<link rel="stylesheet" href="/static/theme-panel.css?v=2ddfac63ed9e">
+<link rel="stylesheet" href="/static/vendor/cyan-theme/settings.css?v=2ddfac63ed9e">
+<script src="/static/vendor/cyan-theme/core.js?v=2ddfac63ed9e"></script>
+<script src="/static/vendor/cyan-theme/settings.js?v=2ddfac63ed9e"></script>
+<script src="/static/theme-panel.js?v=2ddfac63ed9e"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<!-- ================= 登录 ================= -->
+<div id="login" class="login-wrap hidden">
+  <form id="login-form" class="login-box" autocomplete="on">
+    <span class="login-mark" aria-hidden="true">c<span>_</span></span><p class="eyebrow">YOUR SERVER, IN VIEW</p><h1>cyan-panel</h1>
+    <p class="muted" id="login-sub">登录你的服务器工作台</p>
+    <label>用户名<input id="login-user" name="username" autocomplete="username" required></label>
+    <label>密码<input id="login-pass" name="password" type="password" autocomplete="current-password" required></label>
+    <button id="login-btn" type="submit">登录</button>
+    <p class="err" id="login-err" role="alert"></p>
+  </form>
+</div>
+
+<!-- ================= 主界面 ================= -->
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <a class="brand" href="#dash" aria-label="cyan-panel 概览"><span class="brand-mark" aria-hidden="true">c<span>_</span></span><span>cyan-panel<small>服务器工作台</small></span></a>
+    <span class="nav-label">工作空间</span>
+    <div class="sidebar-pages" id="sidebar-pages">
+    <nav class="tabs" id="nav-primary" aria-label="主导航">
+      <button class="tab active" data-tab="dash" aria-label="概览" aria-current="page"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#dashboard"/></svg><span>概览</span></button>
+      <button class="tab" data-tab="files" aria-label="文件管理"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#folder"/></svg><span>文件管理</span></button>
+      <button class="tab" data-tab="system" aria-label="系统信息"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#server"/></svg><span>系统信息</span></button>
+      <button class="tab" data-tab="ssh" aria-label="SSH 连接"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#connection"/></svg><span>SSH 连接</span></button>
+      <button class="tab" data-tab="terminal" aria-label="Web 终端"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#terminal"/></svg><span>Web 终端</span></button>
+    </nav>
+    <div class="sidebar-tools" id="nav-utilities" role="group" aria-label="设置和账号">
+      <button type="button" class="sidebar-setting" id="btn-settings" aria-haspopup="dialog" title="设置"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#settings"/></svg><span>设置</span></button>
+      <div class="userbox"><svg viewBox="0 0 24 24" class="icon account-icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#user"/></svg><div><span class="context-label">账号</span><strong id="whoami"></strong></div><button id="btn-logout" class="icon-button" aria-label="退出登录" title="退出登录"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#logout"/></svg></button></div>
+      <div class="sidebar-update"><span class="context-label">更新时间</span><time id="last-updated" title="最近一次资源采样时间">—</time></div>
+    </div>
+    </div>
+    <button type="button" class="nav-page-switch" id="btn-nav-page" aria-label="显示设置和账号" aria-controls="sidebar-pages" aria-pressed="false"><span class="nav-page-dots" aria-hidden="true"><i></i><i></i></span></button>
+  </aside>
+  <main id="main" class="main" tabindex="-1">
+    <header class="workspace-header"><div><p class="eyebrow">服务器工作台 <span>/</span> <span id="page-category">监控</span></p><h1 id="page-title">概览</h1><p id="page-description" class="muted">资源、负载与进程，尽在眼前。</p><p class="err" id="refresh-error" role="status"></p></div></header>
+  <!-- ---------- 概览 ---------- -->
+  <section id="tab-dash" class="panel">
+    <div class="cards" id="cards"></div>
+    <div class="telemetry-grid" id="telemetry"></div>
+
+    <div class="chartgrid">
+      <div class="card">
+        <div class="card-head"><span>CPU / 内存</span><span class="muted" id="chart-cpu-now"></span></div>
+        <canvas role="img" aria-label="最近采样趋势；当前数值见上方文字" id="chart-cpu" height="150"></canvas>
+        <div class="legend"><i style="background:var(--ct-chart-cpu)"></i>CPU %<i style="background:var(--ct-chart-memory)"></i>内存 %</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>网络吞吐</span><span class="muted" id="chart-net-now"></span></div>
+        <canvas role="img" aria-label="最近采样趋势；当前数值见上方文字" id="chart-net" height="150"></canvas>
+        <div class="legend"><i style="background:var(--ct-chart-rx)"></i>下行<i style="background:var(--ct-chart-tx)"></i>上行</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>磁盘 IO</span><span class="muted" id="chart-dio-now"></span></div>
+        <canvas role="img" aria-label="最近采样趋势；当前数值见上方文字" id="chart-dio" height="150"></canvas>
+        <div class="legend"><i style="background:var(--ct-chart-read)"></i>读<i style="background:var(--ct-chart-write)"></i>写</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>1 分钟负载</span><span class="muted" id="chart-load-now"></span></div>
+        <canvas role="img" aria-label="最近采样趋势；当前数值见上方文字" id="chart-load" height="150"></canvas>
+        <div class="legend"><i style="background:var(--ct-chart-load)"></i>load1</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span>进程（Top <span id="proc-limit-label">15</span>）</span>
+        <span class="seg">
+          <button class="seg-btn active" data-sort="cpu">按 CPU</button>
+          <button class="seg-btn" data-sort="mem">按内存</button>
+        </span>
+      </div>
+      <div class="tablewrap"><table id="proc-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ---------- 文件 ---------- -->
+  <section id="tab-files" class="panel hidden" aria-label="文件管理">
+    <div class="file-manager card">
+      <aside class="file-sidebar" id="file-sidebar" aria-label="文件夹导航">
+        <div class="file-sidebar-heading">位置 <button class="icon-button" id="btn-tree-refresh" aria-label="刷新文件夹树" title="刷新文件夹树"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg></button></div>
+        <nav id="file-shortcuts" class="file-shortcuts" aria-label="快捷位置"></nav>
+        <div class="file-sidebar-heading tree-heading">文件夹</div>
+        <div id="file-tree" aria-label="文件夹树"></div>
+      </aside>
+      <div id="file-sidebar-resizer" class="file-sidebar-resizer" role="separator" aria-label="调整文件树宽度" aria-orientation="vertical" aria-controls="file-sidebar" aria-valuemin="180" aria-valuemax="600" aria-valuenow="280" tabindex="0" title="拖动或按左右方向键调整宽度；双击恢复自动宽度"></div>
+      <div class="file-main">
+        <div class="file-location"><button class="icon-button tree-drawer-button" id="btn-tree-drawer" aria-label="浏览文件夹" aria-controls="file-tree-dialog" aria-expanded="false" title="浏览文件夹"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#folder"/></svg></button><div class="location-buttons">
+          <button class="icon-button" id="btn-files-back" aria-label="后退" title="后退" disabled><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#arrow-left"/></svg></button>
+          <button class="icon-button" id="btn-files-forward" aria-label="前进" title="前进" disabled><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#arrow-right"/></svg></button>
+          <button class="icon-button" id="btn-files-up" aria-label="上一级文件夹" title="上一级"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#arrow-up"/></svg></button>
+        </div><nav id="files-path" class="breadcrumbs" aria-label="当前位置"></nav><button class="icon-button" id="btn-files-address" aria-label="输入路径" title="输入路径"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#edit"/></svg></button><button class="icon-button" id="btn-files-refresh" aria-label="刷新文件列表" title="刷新"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg></button></div>
+        <form id="files-address-form" class="address-form hidden"><label class="sr-only" for="files-address">绝对路径</label><input id="files-address" autocomplete="off" spellcheck="false"><button type="submit">前往</button><button type="button" id="btn-address-cancel" class="ghost">取消</button></form>
+        <div class="files-toolbar">
+          <label class="search-field"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#search"/></svg><span class="sr-only">搜索当前文件夹</span><input id="files-search" type="search" placeholder="搜索当前文件夹" autocomplete="off"></label>
+          <div class="file-controls"><label class="sr-only" for="files-sort">文件排序</label><select id="files-sort"><option value="name">名称排序</option><option value="modified">最近修改</option><option value="size">文件大小</option></select><button class="ghost icon-button" id="btn-files-hidden" aria-label="隐藏以点开头的文件" aria-pressed="true" title="显示或隐藏隐藏文件"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#eye"/></svg></button></div>
+          <div class="file-create"><button class="ghost" id="btn-files-newdir" aria-label="新建文件夹" title="新建文件夹"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#folder-plus"/></svg><span class="label-full">新建文件夹</span><span class="label-compact" aria-hidden="true">文件夹</span></button><button class="ghost" id="btn-files-newfile" aria-label="新建文件" title="新建文件"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#file-plus"/></svg><span class="label-full">新建文件</span><span class="label-compact" aria-hidden="true">文件</span></button><button class="primary" id="btn-files-upload" aria-label="上传文件" title="上传文件"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#upload"/></svg><span class="label-full">上传文件</span><span class="label-compact" aria-hidden="true">上传</span></button><input type="file" id="files-upload-input" multiple class="hidden"></div>
+        </div>
+        <p class="err file-message" id="files-err" role="status" aria-live="polite"></p>
+        <div class="tablewrap file-table-wrap" id="file-drop-zone"><table id="files-table" aria-label="文件列表"></table></div>
+        <footer class="file-footer"><span id="files-count" role="status">正在读取文件</span><span id="files-disk"></span></footer>
+      </div>
+    </div>
+    <p class="small muted file-hint">拖入文件即可上传 · 点击文件夹进入，点击文本文件编辑 · 保存时自动保留 .bak 备份</p>
+  </section>
+
+  <!-- ---------- SSH ---------- -->
+  <section id="tab-ssh" class="panel hidden">
+    <div class="card">
+      <div class="card-head"><span>SSH 远程终端</span>
+        <span class="muted small" id="ssh-summary"></span>
+        <button class="ghost refresh-button" id="btn-ssh-refresh"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg>刷新</button></div>
+      <div class="tablewrap"><table id="ssh-conn-table"></table></div>
+      <p class="err" id="ssh-err"></p>
+      <p class="muted small">查看当前 SSH 登录会话。断开连接会结束对应会话；请确认来源和终端，避免断开自己正在使用的连接。</p>
+    </div>
+  </section>
+
+  <!-- ---------- 系统 ---------- -->
+  <section id="tab-system" class="panel hidden" aria-label="系统信息">
+    <p class="err" id="system-err" role="status"></p>
+    <div class="card system-hero"><div class="system-identity"><span class="system-mark"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#server"/></svg></span><div><span class="context-label">当前服务器</span><h2 id="system-host">正在读取</h2><p id="system-os" class="muted"></p></div></div><div class="system-runtime"><span class="context-label">已连续运行</span><strong id="system-uptime"></strong><span id="system-ip" class="muted"></span></div></div>
+    <article class="card storage-analysis" id="storage-analysis" aria-labelledby="storage-title">
+      <div class="card-head"><div><h2 id="storage-title">磁盘占用分析</h2><p class="muted storage-subtitle">选择分类或点击容量柱查看详情。</p></div><button type="button" class="ghost refresh-button" id="btn-storage-refresh" aria-label="重新扫描磁盘占用" title="重新扫描"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg><span>重新扫描</span></button></div>
+      <p id="storage-status" class="muted small" role="status">正在读取存储信息…</p>
+      <div id="storage-content" hidden></div>
+      <details class="storage-explanation"><summary aria-label="统计说明"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#info"/></svg><span>统计说明</span></summary><p id="storage-method" class="muted small">按目录与常见文件类型归类，每份占用只计入一类。目录数值仅包含当前分类，不代表目录全部大小；不跟随符号链接、不跨挂载点。微小分类保留最小显示高度，实际占用以数值为准。</p></details>
+    </article>
+    <div class="system-grid">
+      <article class="card"><h2 class="card-head">主机与系统</h2><dl id="system-facts" class="system-facts"></dl></article>
+      <article class="card"><h2 class="card-head">处理器与内存</h2><dl id="hardware-facts" class="system-facts"></dl><div id="system-resources" class="system-resources"></div></article>
+      <article class="card"><h2 class="card-head">磁盘与挂载</h2><div id="system-disks" class="system-list"></div></article>
+      <article class="card"><h2 class="card-head">网络接口</h2><div id="system-network" class="system-list"></div></article>
+    </div>
+    <article class="card"><div class="card-head"><h2>最近操作</h2><button class="ghost refresh-button" id="btn-audit"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg>刷新记录</button></div><p class="err" id="audit-err" role="status"></p><div class="tablewrap"><table id="audit-table" aria-label="最近操作记录"></table></div></article>
+  </section>
+
+  <!-- ---------- 终端 ---------- -->
+  <section id="tab-terminal" class="panel hidden">
+    <div id="terminal-workspace" class="terminal-workspace" aria-label="Web 终端">
+      <div class="termbar">
+        <strong>终端</strong><span class="muted small" id="term-status" role="status">未连接</span><span class="spacer"></span>
+        <button type="button" class="ghost term-mobile-only" id="btn-term-return" aria-label="返回面板">返回</button>
+        <button type="button" class="ghost term-mobile-only" id="btn-term-sessions">会话</button>
+        <button type="button" class="ghost" id="btn-term-keyboard">键盘</button>
+        <button type="button" class="ghost" id="btn-term-reconnect">重连</button>
+        <button type="button" class="ghost" id="btn-term-clear">清屏</button>
+      </div>
+      <div id="term" class="termbox"></div>
+      <div id="term-keys" class="term-keys" role="group" aria-label="终端特殊按键">
+        <div class="term-key-row">
+          <button type="button" data-modifier="ctrl" aria-pressed="false">Ctrl</button><button type="button" data-modifier="alt" aria-pressed="false">Alt</button><button type="button" data-modifier="meta" aria-pressed="false" title="Win / Meta 组合键">Win</button>
+          <button type="button" data-term-key="Escape">Esc</button><button type="button" data-term-key="Tab">Tab</button>
+          <button type="button" data-term-key="interrupt">Ctrl+C</button><button type="button" data-term-key="eof">Ctrl+D</button><button type="button" data-term-key="suspend">Ctrl+Z</button>
+        </div>
+        <div class="term-key-row">
+          <button type="button" data-term-key="ArrowLeft" aria-label="向左">←</button><button type="button" data-term-key="ArrowDown" aria-label="向下">↓</button><button type="button" data-term-key="ArrowUp" aria-label="向上">↑</button><button type="button" data-term-key="ArrowRight" aria-label="向右">→</button>
+          <button type="button" data-term-key="Home">Home</button><button type="button" data-term-key="End">End</button><button type="button" data-term-key="PageUp">PgUp</button><button type="button" data-term-key="PageDown">PgDn</button><button type="button" data-term-key="Delete">Del</button><button type="button" data-term-key="Backspace">⌫</button><button type="button" data-term-key="Enter">Enter</button>
+        </div>
+      </div>
+    </div>
+    <p class="muted small">以服务器管理员权限运行。关闭连接会结束当前终端及其中的进程。</p>
+    <details class="card terminal-sessions"><summary>终端会话（最多 <span id="term-max">4</span> 个）</summary>
+      <div class="card-head"><button type="button" class="ghost refresh-button" id="btn-term-refresh"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#refresh"/></svg>刷新</button></div>
+      <div class="tablewrap"><table id="term-sessions-table"></table></div><p class="err" id="term-err"></p>
+    </details>
+  </section>
+  </main>
+</div>
+<dialog id="file-tree-dialog" class="tree-dialog" aria-labelledby="tree-dialog-title">
+  <header class="tree-dialog-header"><h2 id="tree-dialog-title">文件夹</h2><button class="icon-button" id="btn-tree-close" aria-label="关闭文件夹导航"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><use href="/static/icons.svg?v=2ddfac63ed9e#close"/></svg></button></header>
+</dialog>
+
+<script src="/static/vendor/xterm.js?v=2ddfac63ed9e"></script>
+<script src="/static/vendor/addon-fit.js?v=2ddfac63ed9e"></script>
+<script src="/static/app.js?v=2ddfac63ed9e"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# 运行时依赖：只有三个，刻意保持极薄
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29
+psutil>=5.9
+
+# 说明：
+# - uvicorn[standard] 会带上 websockets / httptools / uvloop，Web 终端靠它
+# - 口令哈希用标准库 hashlib.scrypt，不需要 passlib/bcrypt
+# - 前端不引构建链，xterm.js 以静态文件形式放在 app/static/vendor/

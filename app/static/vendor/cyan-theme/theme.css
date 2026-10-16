@@ -1,0 +1,10 @@
+/* Portable tokens and wallpaper layers. Integration maps --ct-* to application tokens. */
+:root { --ct-font: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+body { isolation: isolate; text-shadow: var(--ct-text-shadow,none); }
+input,select,textarea { text-shadow: none; }
+.ct-wallpaper { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; background: var(--ct-base); }
+.ct-wallpaper::after { content: ""; position: absolute; inset: 0; background: var(--ct-scrim); }
+.ct-cover,.ct-web { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: cover; opacity: 0; transition: opacity 480ms ease-out; }
+.ct-cover[data-ct-ready=true],.ct-web[data-ct-ready=true] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .ct-cover,.ct-web { transition: none; } }
+@media (prefers-reduced-transparency: reduce) { :root { --ct-surface: var(--ct-input) !important; --ct-shell: var(--ct-input) !important; --ct-text-shadow: none !important; } }

@@ -1,0 +1,27 @@
+/* Panel token mapping. Keep all host selectors out of vendor/cyan-theme. */
+:root {
+ --bg:var(--ct-base); --panel:var(--ct-surface); --panel2:var(--ct-raised); --sidebar:var(--ct-shell);
+ --fg:var(--ct-fg); --muted:var(--ct-muted); --line:var(--ct-line); --accent:var(--ct-accent); --accent-soft:var(--ct-accent-soft);
+ --danger:var(--ct-danger); --success:var(--ct-success); --warning:var(--ct-warning);
+ --chart-memory:var(--ct-chart-memory); --chart-rx:var(--ct-chart-rx); --chart-tx:var(--ct-chart-tx); --chart-disk:var(--ct-chart-read); --chart-write:var(--ct-chart-write); --chart-load:var(--ct-chart-load);
+ /* Stable colors for the eight visible storage groups. */
+ --storage-system:#63a4ff; --storage-apps:#b59aff; --storage-config:#43d4db;
+ --storage-cache:#f4d35e; --storage-logs:#ff9f43; --storage-backups:#ee91ca;
+ --storage-users:#c69b73; --storage-other:#aeb9c9;
+}
+:root[data-ct-mode=light] {
+ --storage-system:#2165d1; --storage-apps:#8645c5; --storage-config:#008b96;
+ --storage-cache:#af8700; --storage-logs:#ce670b; --storage-backups:#be408d;
+ --storage-users:#875637; --storage-other:#64748b;
+}
+.card,.sidebar,.modal,.tree-dialog,.workspace-header { backdrop-filter:blur(var(--ct-blur)); -webkit-backdrop-filter:blur(var(--ct-blur)); }
+.workspace-header { padding:1rem 1.25rem; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); }
+.primary,#login-btn { background:var(--ct-accent-solid); border-color:var(--ct-accent-solid); color:var(--ct-on-accent); }
+.primary:hover,#login-btn:hover { background:var(--ct-accent-solid); border-color:var(--accent); filter:brightness(1.06); }
+.modal,.action-menu,.tree-dialog,.file-feedback { background:var(--ct-input); }
+.modal,.action-menu,.tree-dialog,.file-feedback,.login-box,.termbox,.primary,#login-btn,th { text-shadow:none; }
+.resource-gauge { --gauge-color:var(--accent); }
+[data-gauge=memory] .resource-gauge { --gauge-color:var(--ct-secondary); }[data-gauge=disk] .resource-gauge { --gauge-color:var(--ct-chart-read); }[data-gauge=load] .resource-gauge { --gauge-color:var(--ct-chart-load); }
+.resource-gauge[data-level=elevated] .gauge-fill { stroke:var(--warning); }.capacity-track i { background:var(--ct-secondary); }
+.traffic-values>div:first-child .metric { color:var(--chart-rx); }.traffic-values>div:last-child .metric { color:var(--chart-tx); }.traffic-rx { fill:var(--chart-rx); }.traffic-tx { fill:var(--chart-tx); }
+@media(max-width:599px), (orientation:landscape) and (max-height:520px) and (max-width:959px) { .workspace-header { padding:.75rem; } }

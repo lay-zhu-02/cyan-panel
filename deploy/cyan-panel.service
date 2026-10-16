@@ -1,0 +1,34 @@
+; cyan-panel systemd 单元
+; 安装：install -m 644 /opt/cyan-panel/deploy/cyan-panel.service /etc/systemd/system/
+; 然后：systemctl daemon-reload && systemctl enable --now cyan-panel
+[Unit]
+Description=cyan-panel - lightweight server operations panel
+Documentation=file:///opt/cyan-panel/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=/opt/cyan-panel
+ExecStart=/opt/cyan-panel/venv/bin/python /opt/cyan-panel/run.py
+Restart=always
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=10
+
+; 文件管理和 Web 终端以服务用户身份运行，默认使用 root。
+; 能收紧的地方都收紧了：不额外开权限、不隔离 /tmp（否则 Web 终端看到的 /tmp 与 SSH 不一致）。
+User=root
+NoNewPrivileges=false
+PrivateTmp=false
+PrivateDevices=false
+ProtectSystem=false
+ProtectHome=false
+LimitNOFILE=65535
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cyan-panel
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+{
+  "name": "cyan-panel",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Lightweight Linux server workspace",
+  "scripts": {
+    "test:ui": "node tests/ui_test.cjs",
+    "check:js": "node --check app/static/app.js",
+    "test:theme": "node tests/theme_test.cjs",
+    "test:theme-engine": "python tests/test_theme_engine.py"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
